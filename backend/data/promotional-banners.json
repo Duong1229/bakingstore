@@ -1,0 +1,40 @@
+[
+  {
+    "id": "banner-cake-20-10",
+    "title": "Quà bánh 20/10",
+    "season": "Ngày Phụ nữ Việt Nam",
+    "image_url": "/banners/banh-20-10.png",
+    "target_url": "/banner/banner-cake-20-10",
+    "story_title": "Gửi một chiếc bánh, gửi trọn yêu thương",
+    "story_content": "20/10 là dịp để gửi lời cảm ơn thật ngọt ngào đến những người phụ nữ bạn yêu quý. Từ một chiếc bánh kem hoa nhỏ xinh đến hộp cupcake tự làm, bạn có thể chuẩn bị món quà mang dấu ấn riêng bằng những nguyên liệu tươi ngon của Tiệm Ốc.",
+    "category_id": "10000000-0000-0000-0000-000000000007",
+    "sort_order": 1,
+    "is_active": true
+  },
+  {
+    "id": "banner-ingredients",
+    "title": "Set nguyên liệu tiện lợi",
+    "season": "Mùa bánh mới",
+    "image_url": "/banners/nguyen-lieu-troi-xanh.png",
+    "target_url": "/banner/banner-ingredients",
+    "story_title": "Một hộp đủ đầy cho mẻ bánh đầu tiên",
+    "story_content": "Chọn set nguyên liệu đã được định lượng sẵn để việc làm bánh nhẹ nhàng và tiện lợi hơn.",
+    "category_id": "10000000-0000-0000-0000-000000000001",
+    "sort_order": 2,
+    "is_active": true,
+    "collection_key": "",
+    "updated_at": "2026-10-13T12:59:13.752Z"
+  },
+  {
+    "id": "banner-cookie",
+    "title": "Bánh quy & Cookie",
+    "season": "Mùa cookie",
+    "image_url": "/banners/cookie-nang-vang.png",
+    "target_url": "/banner/banner-cookie",
+    "story_title": "Mẻ cookie thơm bơ cho những buổi chiều ấm áp",
+    "story_content": "Chọn bột, bơ và chocolate phù hợp để làm ra những chiếc cookie giòn thơm tại nhà.",
+    "category_id": "10000000-0000-0000-0000-000000000006",
+    "sort_order": 3,
+    "is_active": true
+  }
+]

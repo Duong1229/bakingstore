@@ -1,0 +1,31 @@
+-- Bổ sung catalogue mẫu phong phú hơn cho Tiệm Ốc.
+-- Chạy một lần trong Supabase SQL Editor sau schema.sql và seed.sql.
+-- Có thể chạy lại an toàn: SKU đã có sẽ được bỏ qua.
+
+WITH samples(category_slug, sku, name, slug, description, price, unit, image_url, is_combo) AS (
+  VALUES
+    ('bot-men-lam-banh', 'BOT-DA-DUNG-1KG', 'Bột mì đa dụng Hoa Ngọc Lan (1kg)', 'bot-mi-da-dung-hoa-ngoc-lan-1kg', 'Bột mì đa dụng tiện làm bánh bông lan, cookie và bánh rán. Bảo quản kín, khô ráo.', 32000, 'gói', 'https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=900&q=80', FALSE),
+    ('bot-men-lam-banh', 'BOT-BAP-400G', 'Bột bắp hữu cơ (400g)', 'bot-bap-huu-co-400g', 'Bột bắp mịn giúp tạo độ sánh cho nhân bánh, pudding và súp ngọt.', 29000, 'gói', 'https://images.unsplash.com/photo-1498579397066-22750a3cb424?auto=format&fit=crop&w=900&q=80', FALSE),
+    ('bot-men-lam-banh', 'BOT-NO-BAKELS-100G', 'Bột nở Bakels (100g)', 'bot-no-bakels-100g', 'Bột nở cho bánh bông lan, cupcake và muffin; dùng theo đúng định lượng công thức.', 24000, 'gói', 'https://images.unsplash.com/photo-1556910103-1c02745aae4d?auto=format&fit=crop&w=900&q=80', FALSE),
+    ('bot-men-lam-banh', 'DUONG-XAY-500G', 'Đường xay mịn (500g)', 'duong-xay-min-500g', 'Đường xay mịn dùng làm kem bơ, icing và trang trí bánh.', 27000, 'gói', 'https://images.unsplash.com/photo-1575377427642-087cf684f29d?auto=format&fit=crop&w=900&q=80', FALSE),
+    ('bo-sua-pho-mai', 'CREAM-CHEESE-500G', 'Cream Cheese Anchor (500g)', 'cream-cheese-anchor-500g', 'Phô mai kem béo mịn cho cheesecake, frosting và nhân bánh. Bảo quản lạnh 2–6°C.', 118000, 'hộp', 'https://images.unsplash.com/photo-1628088062854-d1870b4553da?auto=format&fit=crop&w=900&q=80', FALSE),
+    ('bo-sua-pho-mai', 'SUA-TUOI-1L', 'Sữa tươi không đường (1L)', 'sua-tuoi-khong-duong-1l', 'Sữa tươi thanh trùng dùng pha bột, làm bánh và nấu sốt.', 39000, 'hộp', 'https://images.unsplash.com/photo-1550583724-b2692b85b150?auto=format&fit=crop&w=900&q=80', FALSE),
+    ('bo-sua-pho-mai', 'SUA-DAC-380G', 'Sữa đặc Ngôi Sao Phương Nam (380g)', 'sua-dac-ngoi-sao-phuong-nam-380g', 'Sữa đặc có đường cho mousse, kem và đồ uống.', 29000, 'lon', 'https://images.unsplash.com/photo-1563636619-e9143da7973b?auto=format&fit=crop&w=900&q=80', FALSE),
+    ('bo-sua-pho-mai', 'KEM-TUOI-1L', 'Whipping Cream Elle & Vire (1L)', 'whipping-cream-elle-vire-1l', 'Kem sữa tươi béo 35% phù hợp đánh bông làm bánh kem, mousse. Bảo quản lạnh.', 198000, 'hộp', 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&w=900&q=80', FALSE),
+    ('huong-lieu-mau', 'MATCHA-50G', 'Bột Matcha Uji Nhật Bản (50g)', 'bot-matcha-uji-nhat-ban-50g', 'Matcha thơm, màu xanh tự nhiên dùng cho bánh, kem và đồ uống.', 145000, 'hũ', 'https://images.unsplash.com/photo-1536256263959-770b48d82b0a?auto=format&fit=crop&w=900&q=80', FALSE),
+    ('huong-lieu-mau', 'CHOCOLATE-CHIP-500G', 'Chocolate chip đen 55% (500g)', 'chocolate-chip-den-55-500g', 'Chocolate chip tan chảy vừa phải, thích hợp làm cookie, muffin và trang trí.', 118000, 'gói', 'https://images.unsplash.com/photo-1548907040-4d42d8cbb7c8?auto=format&fit=crop&w=900&q=80', FALSE),
+    ('huong-lieu-mau', 'MAU-GEL-DO-25G', 'Màu gel đỏ Wilton (28g)', 'mau-gel-do-wilton-28g', 'Màu gel thực phẩm cô đặc, lên màu tốt; dùng từng giọt nhỏ.', 65000, 'tuýp', 'https://images.unsplash.com/photo-1571115177098-24ec42ed204d?auto=format&fit=crop&w=900&q=80', FALSE),
+    ('huong-lieu-mau', 'HAT-HANH-NHAN-200G', 'Hạnh nhân lát (200g)', 'hanh-nhan-lat-200g', 'Hạnh nhân lát giòn thơm để phủ mặt bánh, làm granola hoặc trang trí.', 78000, 'gói', 'https://images.unsplash.com/photo-1508061253366-41db8603fd1e?auto=format&fit=crop&w=900&q=80', FALSE),
+    ('dung-cu-khuon-khay', 'KHUON-TRON-18CM', 'Khuôn tròn đế rời chống dính 18cm', 'khuon-tron-de-roi-chong-dinh-18cm', 'Khuôn cơ bản cho bánh bông lan và cheesecake 6–8 phần.', 99000, 'cái', 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&w=900&q=80', FALSE),
+    ('dung-cu-khuon-khay', 'PHOI-LONG-25CM', 'Phới lồng inox 25cm', 'phoi-long-inox-25cm', 'Phới lồng inox dễ vệ sinh, phù hợp trộn bột và đánh trứng.', 45000, 'cái', 'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?auto=format&fit=crop&w=900&q=80', FALSE),
+    ('dung-cu-khuon-khay', 'TUI-BAT-KEM-100', 'Túi bắt kem dùng một lần (100 cái)', 'tui-bat-kem-dung-mot-lan-100-cai', 'Túi bắt kem dày, trong suốt, dùng cho kem tươi và icing.', 58000, 'hộp', 'https://images.unsplash.com/photo-1565958011703-44f9829ba187?auto=format&fit=crop&w=900&q=80', FALSE),
+    ('dung-cu-khuon-khay', 'GIAY-NEN-5M', 'Giấy nến chống dính 5m', 'giay-nen-chong-dinh-5m', 'Giấy nến chịu nhiệt, dùng lót khay nướng và bọc thực phẩm.', 35000, 'cuộn', 'https://images.unsplash.com/photo-1586444248902-2f64eddc13df?auto=format&fit=crop&w=900&q=80', FALSE),
+    ('set-combo-lam-banh', 'SET-COOKIE-12C', 'Set nguyên liệu làm Cookie bơ (12–15 chiếc)', 'set-nguyen-lieu-lam-cookie-bo-12-15-chiec', 'Set định lượng sẵn gồm bột mì, bơ, đường, vanilla và chocolate chip kèm hướng dẫn.', 179000, 'set', 'https://images.unsplash.com/photo-1499636136210-6f4ee915583e?auto=format&fit=crop&w=900&q=80', TRUE),
+    ('set-combo-lam-banh', 'SET-BONGLAN-6P', 'Set nguyên liệu làm Bánh bông lan (6 phần)', 'set-nguyen-lieu-lam-banh-bong-lan-6-phan', 'Set cơ bản cho khuôn 18cm: bột, đường, bột nở và công thức chi tiết.', 125000, 'set', 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&w=900&q=80', TRUE),
+    ('set-combo-lam-banh', 'SET-HOACUC-1O', 'Set nguyên liệu Bánh mì hoa cúc (1 ổ)', 'set-nguyen-lieu-banh-mi-hoa-cuc-1-o', 'Set bột mì bánh mì, men, bơ, sữa và công thức bện hoa cúc.', 215000, 'set', 'https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=900&q=80', TRUE)
+)
+INSERT INTO products (category_id, sku, name, slug, description, price, unit, image_url, is_combo, is_active, rating_average, rating_count)
+SELECT categories.id, samples.sku, samples.name, samples.slug, samples.description, samples.price, samples.unit, samples.image_url, samples.is_combo, TRUE, 0, 0
+FROM samples
+JOIN categories ON categories.slug = samples.category_slug
+ON CONFLICT (sku) DO NOTHING;

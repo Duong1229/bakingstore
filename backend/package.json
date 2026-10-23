@@ -1,0 +1,25 @@
+{
+  "name": "baking-ai-store-backend",
+  "version": "1.0.0",
+  "description": "Backend API cho Website bán nguyên liệu làm bánh tích hợp Gemini AI, FEFO & SePay",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js"
+  },
+  "dependencies": {
+    "@google/genai": "^2.22.0",
+    "@supabase/supabase-js": "^2.48.1",
+    "axios": "^1.7.9",
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "exceljs": "^4.4.0",
+    "express": "^4.21.2",
+    "google-auth-library": "^11.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^1.4.5-lts.1",
+    "pdfkit": "^0.16.0",
+    "qrcode": "^1.5.4"
+  }
+}
