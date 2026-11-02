@@ -19,7 +19,7 @@
         <router-link to="/products" class="nav-link" active-class="active">Nguyên liệu</router-link>
         <router-link to="/products?category=combo" class="nav-link" active-class="active">Set nguyên liệu</router-link>
         <router-link :to="{ path: '/products', query: { category: 'dụng cụ' } }" class="nav-link" active-class="active">Dụng cụ làm bánh</router-link>
-        <form v-if="isSearching" class="nav-search" @submit.prevent="submitSearch"><input v-model.trim="searchTerm" autofocus placeholder="Tìm sản phẩm..."><button>⌕</button></form>
+        <form v-if="isSearching" class="nav-search" @submit.prevent="submitSearch"><input v-model.trim="searchTerm" autofocus placeholder="Tìm tên hoặc mã SKU..." @keyup.enter.prevent="submitSearch"><button type="submit" aria-label="Tìm sản phẩm">⌕</button></form>
         <button v-else class="search-toggle" title="Tìm kiếm sản phẩm" @click="isSearching = true">⌕</button>
         <router-link to="/about" class="nav-link" active-class="active">Về chúng tôi</router-link>
       </div>
@@ -86,7 +86,8 @@ const handleLogout = () => {
   router.push('/');
 };
 const submitSearch = () => {
-  if (searchTerm.value) router.push({ path: '/products', query: { search: searchTerm.value } });
+  const keyword = searchTerm.value.trim();
+  if (keyword) router.push({ path: '/products', query: { search: keyword } });
   isSearching.value = false;
 };
 </script>

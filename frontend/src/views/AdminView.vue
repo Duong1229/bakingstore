@@ -332,7 +332,7 @@
           </button>
         </div>
         <form
-          v-if="tab === 'inventory'"
+          v-if="tab === 'inventory' && inventorySection === 'inbound'"
           class="manual-batch"
           @submit.prevent="saveManualBatch"
         >
@@ -683,6 +683,7 @@
                   <th>Trạng thái</th>
                   <th>Giá bán</th>
                   <th>Danh mục</th>
+                  <th>Vị trí kho</th>
                   <th>Hành động</th>
                 </tr>
               </thead>
@@ -719,6 +720,7 @@
                   </td>
                   <td>{{ money(product.price) }}</td>
                   <td>{{ product.categories?.name || "-" }}</td>
+                  <td>{{ product.warehouse_locations ? `${product.warehouse_locations.code} · ${product.warehouse_locations.name}` : "Chưa gán" }}</td>
                   <td>
                     <button
                       class="edit-button"
@@ -739,7 +741,7 @@
                   </td>
                 </tr>
                 <tr v-if="!filteredAdminProducts.length">
-                  <td colspan="8" class="empty">Không tìm thấy sản phẩm.</td>
+                  <td colspan="9" class="empty">Không tìm thấy sản phẩm.</td>
                 </tr>
               </tbody>
             </table>
@@ -770,6 +772,13 @@
                     :value="category.id"
                   >
                     {{ category.name }}
+                  </option>
+                </select></label
+              ><label
+                >Vị trí kho<select v-model="productForm.location_id">
+                  <option value="">Chưa gán vị trí</option>
+                  <option v-for="location in locations" :key="location.id" :value="location.id">
+                    {{ location.code }} · {{ location.name }}
                   </option>
                 </select></label
               ><label
@@ -946,7 +955,13 @@
             Tồn kho được tính từ các lô còn hoạt động. Khi khách đặt hàng thành
             công, số lượng lô sẽ tự giảm theo nguyên tắc hạn gần nhất trước.
           </div>
-          <div class="inventory-actions">
+          <nav class="inventory-subnav" aria-label="Chức năng quản lý kho">
+            <button :class="{ active: inventorySection === 'overview' }" @click="inventorySection = 'overview'">Tổng quan kho</button>
+            <button :class="{ active: inventorySection === 'inbound' }" @click="inventorySection = 'inbound'; cancelBatchEdit()">Nhập kho</button>
+            <button :class="{ active: inventorySection === 'outbound' }" @click="inventorySection = 'outbound'">Xuất / tiêu hủy</button>
+            <button :class="{ active: inventorySection === 'locations' }" @click="inventorySection = 'locations'">Vị trí kho</button>
+          </nav>
+          <div v-if="inventorySection === 'inbound'" class="inventory-actions">
             <button type="button" @click="downloadInventoryTemplate">
               ⇩ Tải mẫu Excel</button
             ><label
@@ -956,7 +971,27 @@
                 @change="importExcel"
             /></label>
           </div>
-          <article v-if="importResult" class="import-result" role="status">
+          <section v-if="inventorySection === 'locations'" class="warehouse-locations">
+            <div class="warehouse-locations-head">
+              <div><h3>Vị trí kho</h3><p>Tạo và quản lý tủ mát, tủ đông, kệ khô hoặc khu vực để hàng.</p></div>
+              <button type="button" @click="openLocationForm()">＋ Thêm vị trí</button>
+            </div>
+            <form v-if="showLocationForm" class="location-form" @submit.prevent="saveLocation">
+              <label>Mã vị trí<input v-model.trim="locationForm.code" placeholder="VD: KE-A-T1" required /></label>
+              <label>Tên vị trí<input v-model.trim="locationForm.name" placeholder="VD: Kệ A · Tầng 1" required /></label>
+              <label>Khu vực<select v-model="locationForm.zone_type"><option value="general">Khu chung</option><option value="dry_shelf">Kệ khô</option><option value="cold_storage">Tủ mát</option><option value="freezer">Tủ đông</option><option value="combo_area">Khu set combo</option></select></label>
+              <label>Nhiệt độ<input v-model.trim="locationForm.temperature_range" placeholder="VD: 2°C - 8°C" /></label>
+              <label class="location-description">Ghi chú<input v-model.trim="locationForm.description" placeholder="Mô tả thêm (không bắt buộc)" /></label>
+              <div class="form-actions"><button type="button" @click="showLocationForm = false">Hủy</button><button type="submit">{{ editingLocation ? 'Lưu vị trí' : 'Thêm vị trí' }}</button></div>
+            </form>
+            <div class="product-table-wrap location-table-wrap">
+              <table class="product-table"><thead><tr><th>Mã</th><th>Tên vị trí</th><th>Khu vực</th><th>Nhiệt độ</th><th>Ghi chú</th><th>Hành động</th></tr></thead><tbody>
+                <tr v-for="location in locations" :key="location.id"><td><b>{{ location.code }}</b></td><td>{{ location.name }}</td><td>{{ locationZoneLabel(location.zone_type) }}</td><td>{{ location.temperature_range || '-' }}</td><td>{{ location.description || '-' }}</td><td><button class="edit-button" @click="openLocationForm(location)">✎ Sửa</button><button class="delete-button" @click="removeLocation(location)">Xóa</button></td></tr>
+                <tr v-if="!locations.length"><td colspan="6" class="empty">Chưa có vị trí kho. Hãy thêm vị trí đầu tiên.</td></tr>
+              </tbody></table>
+            </div>
+          </section>
+          <article v-if="importResult && inventorySection === 'inbound'" class="import-result" role="status">
             <div>
               <b>{{
                 importResult.type === "disposal"
@@ -987,11 +1022,19 @@
               tệp.</small
             >
           </article>
-          <h3>Tồn kho theo sản phẩm</h3>
-          <Table :cols="stockCols" :rows="stock" />
-          <div class="batch-list-heading">
+          <template v-if="inventorySection === 'overview'">
+            <section class="expiry-alert">
+              <div class="expiry-alert-head"><div><h3>⚠ Lô hàng cần chú ý hạn sử dụng</h3><p>Hiển thị trước các lô đã hết hạn hoặc sẽ hết hạn trong 30 ngày.</p></div><b>{{ expiryAttentionBatches.length }} lô</b></div>
+              <div v-if="expiryAttentionBatches.length" class="expiry-alert-list"><article v-for="batch in expiryAttentionBatches" :key="batch.id" :class="{ overdue: isExpired(batch) }"><div><b>{{ batch.products?.name || 'Sản phẩm' }}</b><small>{{ batch.batch_code }} · còn {{ batch.current_quantity }} {{ batch.products?.unit || '' }}</small></div><div><strong>{{ isExpired(batch) ? 'ĐÃ HẾT HẠN' : `Còn ${daysUntilExpiry(batch)} ngày` }}</strong><small>HSD: {{ batch.expiry_date }}</small></div></article></div>
+              <p v-else class="expiry-clear">✓ Chưa có lô nào hết hạn hoặc sắp hết hạn trong 30 ngày tới.</p>
+              <button v-if="expiryAttentionBatches.some(canDispose)" type="button" @click="inventorySection = 'outbound'">Đi tới xuất tiêu hủy →</button>
+            </section>
+            <h3>Tồn kho theo sản phẩm</h3>
+            <Table :cols="stockCols" :rows="stock" />
+          </template>
+          <template v-if="inventorySection === 'outbound'"><div class="batch-list-heading">
             <div>
-              <h3>Danh sách lô hàng</h3>
+              <h3>Lô hết hạn cần xuất tiêu hủy</h3>
               <p>
                 Tích các lô đã hết hạn để lập một phiếu xuất tiêu hủy chung.
               </p>
@@ -1024,6 +1067,7 @@
                   <th>Chọn</th>
                   <th>Mã lô</th>
                   <th>Sản phẩm</th>
+                  <th>Vị trí kho</th>
                   <th>Ngày nhập</th>
                   <th>Hạn sử dụng</th>
                   <th>Số lượng còn</th>
@@ -1054,6 +1098,7 @@
                       batch.products?.sku || "-"
                     }}</small>
                   </td>
+                  <td>{{ batch.products?.warehouse_locations ? `${batch.products.warehouse_locations.code} · ${batch.products.warehouse_locations.name}` : "Chưa gán" }}</td>
                   <td>
                     {{
                       batch.manufacture_date ||
@@ -1100,7 +1145,7 @@
                 </tr>
               </tbody>
             </table>
-          </div></template
+          </div></template></template
         >
       </section>
     </main>
@@ -1136,6 +1181,8 @@ const vouchers = ref([]);
 const banners = ref([]);
 const stock = ref([]);
 const batches = ref([]);
+const locations = ref([]);
+const inventorySection = ref('overview');
 const storeReviews = ref([]);
 const conversations = ref([]),
   selectedConversation = ref(null);
@@ -1163,13 +1210,16 @@ const productSearch = ref(""),
   editingUser = ref(null),
   showPriceHistory = ref(false),
   historyProduct = ref(null),
-  priceHistory = ref([]);
+  priceHistory = ref([]),
+  showLocationForm = ref(false),
+  editingLocation = ref(null);
 const fallbackImage =
   "https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=150&q=80";
 const blankProduct = () => ({
   name: "",
   sku: "",
   category_id: "",
+  location_id: "",
   price: 0,
   unit: "gói",
   image_url: "",
@@ -1178,6 +1228,8 @@ const blankProduct = () => ({
   is_active: true,
 });
 const productForm = ref(blankProduct());
+const blankLocation = () => ({ code: '', name: '', zone_type: 'general', temperature_range: '', description: '' });
+const locationForm = ref(blankLocation());
 const blankUser = (role = "customer") => ({
   full_name: "",
   email: "",
@@ -1235,15 +1287,22 @@ const manualBatch = ref(blankBatch());
 const inventoryProducts = computed(() => products.value);
 const filteredBatches = computed(() => {
   const term = batchSearch.value.toLowerCase();
-  // Phiếu tiêu hủy đã là lịch sử đối soát; không giữ lô đã xử lý trong bảng
-  // vận hành hằng ngày để quản trị viên không vô tình thao tác lần nữa.
   return batches.value.filter(
     (batch) =>
-      batch.status !== "expired" &&
+      canDispose(batch) &&
       `${batch.batch_code} ${batch.products?.sku || ""} ${batch.products?.name || ""}`
         .toLowerCase()
         .includes(term),
   );
+});
+const expiryAttentionBatches = computed(() => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const warningDate = new Date(today);
+  warningDate.setDate(warningDate.getDate() + 30);
+  return batches.value
+    .filter(batch => Number(batch.current_quantity || 0) > 0 && batch.expiry_date && new Date(`${batch.expiry_date}T00:00:00`) <= warningDate && batch.status !== 'expired')
+    .sort((a, b) => String(a.expiry_date).localeCompare(String(b.expiry_date)));
 });
 const title = computed(
   () => menu.find((item) => item.id === tab.value)?.name || "Quản trị",
@@ -1262,6 +1321,7 @@ const descriptions = {
 };
 const description = computed(() => descriptions[tab.value] || "");
 const money = (value) => Number(value || 0).toLocaleString("vi-VN") + "đ";
+const locationZoneLabel = (zone) => ({ cold_storage: 'Tủ mát', freezer: 'Tủ đông', dry_shelf: 'Kệ khô', combo_area: 'Khu set combo', general: 'Khu chung' })[zone] || zone || '-';
 const text = (key) => (row) => row?.[key] ?? "-";
 const status = (key) => (row) => (row?.[key] ? "Hoạt động" : "Đã khóa");
 const customerCols = [
@@ -1314,6 +1374,7 @@ const stockCols = [
   ["Sản phẩm", text("name")],
   ["Tồn kho", text("total_stock")],
   ["Đơn vị", text("unit")],
+  ["Vị trí kho", (r) => r.warehouse_locations ? `${r.warehouse_locations.code} · ${r.warehouse_locations.name}` : "Chưa gán"],
   ["Hạn gần nhất", text("nearest_expiry")],
 ];
 const batchCols = [
@@ -1510,6 +1571,22 @@ const openProductForm = (product) => {
       }
     : blankProduct();
   showProductForm.value = true;
+};
+const openLocationForm = (location = null) => {
+  editingLocation.value = location;
+  locationForm.value = location ? { ...location, temperature_range: location.temperature_range || '', description: location.description || '' } : blankLocation();
+  showLocationForm.value = true;
+};
+const saveLocation = () => safe(async () => {
+  if (editingLocation.value?.id) await inventoryApi.updateLocation(editingLocation.value.id, locationForm.value);
+  else await inventoryApi.createLocation(locationForm.value);
+  showLocationForm.value = false;
+  editingLocation.value = null;
+  await loadInventory();
+});
+const removeLocation = (location) => {
+  if (!window.confirm(`Xóa vị trí kho “${location.code} · ${location.name}”?`)) return;
+  safe(async () => { await inventoryApi.deleteLocation(location.id); await loadInventory(); });
 };
 const saveProduct = () =>
   safe(async () => {
@@ -1797,6 +1874,7 @@ const importExcel = (event) => {
   });
 };
 const editBatch = (batch) => {
+  inventorySection.value = 'inbound';
   editingBatch.value = batch;
   manualBatch.value = {
     product_id: batch.product_id || batch.products?.id || "",
@@ -1847,6 +1925,11 @@ const removeBatch = (batch) => {
 const isExpired = (batch) =>
   Boolean(batch?.expiry_date) &&
   batch.expiry_date < new Date().toISOString().slice(0, 10);
+const daysUntilExpiry = (batch) => {
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const expiry = new Date(`${batch.expiry_date}T00:00:00`);
+  return Math.max(0, Math.ceil((expiry - today) / 86400000));
+};
 // Lô đã tiêu hủy vẫn được chọn để in lại phiếu; lô còn tồn sẽ được lập phiếu mới.
 const canDispose = (batch) =>
   isExpired(batch) &&
@@ -1991,14 +2074,16 @@ const maxPaymentRevenue = computed(() =>
 );
 const loadInventory = () =>
   safe(async () => {
-    const [a, b, c] = await Promise.all([
+    const [a, b, c, d] = await Promise.all([
       inventoryApi.getStock(),
       inventoryApi.getBatches(),
       productApi.getAdminProducts({ limit: 100, include_inactive: true }),
+      inventoryApi.getLocations(),
     ]);
     stock.value = a.stock || [];
     batches.value = b.batches || [];
     products.value = c.products || [];
+    locations.value = d.locations || [];
   });
 const loaders = {
   customers: () =>
@@ -2035,12 +2120,14 @@ const loaders = {
     }),
   products: () =>
     safe(async () => {
-      const [productResult, categoryResult] = await Promise.all([
+      const [productResult, categoryResult, locationResult] = await Promise.all([
         productApi.getAdminProducts({ limit: 100, include_inactive: true }),
         productApi.getCategories(),
+        inventoryApi.getLocations(),
       ]);
       products.value = productResult.products || [];
       categories.value = categoryResult.categories || [];
+      locations.value = locationResult.locations || [];
     }),
   vouchers: () =>
     safe(
@@ -3418,6 +3505,26 @@ td {
   font: inherit;
   min-width: 250px;
 }
+.warehouse-locations { margin: 22px 0; padding: 18px; border: 1px solid #e4d8cc; border-radius: 10px; background: #fffdf9; }
+.warehouse-locations-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+.warehouse-locations-head h3 { margin: 0; color: var(--color-primary); }
+.warehouse-locations-head p { margin: 5px 0 0; color: var(--color-text-muted); }
+.warehouse-locations-head button, .location-form .form-actions button:last-child { border: 0; border-radius: 7px; padding: 10px 13px; background: var(--color-primary); color: #fff; font-weight: 700; cursor: pointer; }
+.location-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 11px; margin-top: 15px; padding: 14px; border: 1px dashed #d8c6b5; border-radius: 8px; }
+.location-form label { display: grid; gap: 5px; color: #5f5146; font-size: .85rem; font-weight: 700; }
+.location-form input, .location-form select { min-width: 0; padding: 9px; border: 1px solid #ded4ca; border-radius: 6px; font: inherit; }
+.location-form .location-description, .location-form .form-actions { grid-column: 1 / -1; }
+.location-form .form-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.location-form .form-actions button:first-child { border: 1px solid #ded4ca; border-radius: 7px; padding: 10px 13px; background: #fff; cursor: pointer; }
+.location-table-wrap { margin-top: 15px; }
+.inventory-subnav { display: flex; gap: 8px; flex-wrap: wrap; margin: 18px 0; border-bottom: 1px solid #e4d8cc; padding-bottom: 12px; }
+.inventory-subnav button { border: 1px solid #ded4ca; border-radius: 7px; padding: 9px 12px; background: #fff; color: #5f5146; font: inherit; font-weight: 700; cursor: pointer; }
+.inventory-subnav button.active { background: var(--color-primary); border-color: var(--color-primary); color: #fff; }
+.expiry-alert { margin: 18px 0; padding: 18px; border: 1px solid #f3c46d; border-left: 5px solid #d97706; border-radius: 10px; background: #fff9eb; }
+.expiry-alert-head { display: flex; justify-content: space-between; gap: 14px; align-items: flex-start; }
+.expiry-alert h3 { margin: 0; color: #9a4d00; }.expiry-alert p { margin: 5px 0 0; color: #76542a; }.expiry-alert-head > b { border-radius: 99px; padding: 5px 10px; background: #ffe4b2; color: #9a4d00; white-space: nowrap; }
+.expiry-alert-list { display: grid; gap: 8px; margin-top: 14px; }.expiry-alert-list article { display: flex; justify-content: space-between; gap: 16px; align-items: center; padding: 11px 12px; border: 1px solid #f3d8a1; border-radius: 7px; background: #fff; }.expiry-alert-list article.overdue { border-color: #efb2ad; background: #fff1ef; }.expiry-alert-list b, .expiry-alert-list strong, .expiry-alert-list small { display: block; }.expiry-alert-list strong { color: #ad3d32; }.expiry-alert-list small { margin-top: 3px; color: var(--color-text-muted); }.expiry-alert-list article:not(.overdue) strong { color: #ad6700; }
+.expiry-alert > button { margin-top: 14px; border: 0; border-radius: 7px; padding: 10px 12px; background: #9a4d00; color: #fff; font-weight: 700; cursor: pointer; }.expiry-clear { margin: 14px 0 0 !important; color: #24734b !important; }
 @media (max-width: 900px) {
   .batch-selection-actions {
     justify-content: flex-start;
@@ -3426,5 +3533,8 @@ td {
     min-width: 0;
     flex: 1;
   }
+  .warehouse-locations-head { align-items: flex-start; flex-direction: column; }
+  .location-form { grid-template-columns: 1fr; }
+  .expiry-alert-head, .expiry-alert-list article { align-items: flex-start; flex-direction: column; }
 }
 </style>

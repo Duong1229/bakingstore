@@ -34,6 +34,8 @@ router.put('/batches/:id/status', authenticate, authorize('admin'), inventoryCon
 router.post('/batches/:id/dispose', authenticate, authorize('admin'), inventoryController.disposeExpiredBatch);
 router.post('/disposals/export', authenticate, authorize('admin'), inventoryController.exportExpiredDisposals);
 router.post('/import-excel', authenticate, authorize('admin'), upload.single('file'), inventoryController.importExcel);
+router.post('/locations', authenticate, authorize('admin'), inventoryController.createLocation);
 router.put('/locations/:id', authenticate, authorize('admin'), inventoryController.updateLocation);
+router.delete('/locations/:id', authenticate, authorize('admin'), inventoryController.deleteLocation);
 
 module.exports = router;

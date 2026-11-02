@@ -211,7 +211,7 @@ exports.getStockSummary = async (req, res, next) => {
       .from('inventory_batches')
       .select(`
         product_id, current_quantity, expiry_date, status,
-        products(id, sku, name, unit, category_id)
+        products(id, sku, name, unit, category_id, warehouse_locations(code, name, zone_type))
       `)
       .eq('status', 'active')
       .gte('expiry_date', today);
@@ -288,13 +288,42 @@ exports.getLocations = async (req, res, next) => {
   }
 };
 
+// [POST] /api/inventory/locations - Tạo vị trí kho mới (Admin)
+exports.createLocation = async (req, res, next) => {
+  try {
+    const { code, name, zone_type = 'general', temperature_range = null, description = null } = req.body || {};
+    const allowedZones = ['cold_storage', 'freezer', 'dry_shelf', 'combo_area', 'general'];
+    if (!String(code || '').trim() || !String(name || '').trim()) {
+      return res.status(400).json({ status: 'error', message: 'Vui lòng nhập mã và tên vị trí kho.' });
+    }
+    if (!allowedZones.includes(zone_type)) {
+      return res.status(400).json({ status: 'error', message: 'Loại khu vực kho không hợp lệ.' });
+    }
+    const { data, error } = await supabase
+      .from('warehouse_locations')
+      .insert({ code: String(code).trim().toUpperCase(), name: String(name).trim(), zone_type, temperature_range: temperature_range || null, description: description || null })
+      .select()
+      .single();
+    if (error) throw error;
+    res.status(201).json({ status: 'success', message: 'Đã thêm vị trí kho.', location: data });
+  } catch (err) { next(err); }
+};
+
 // [PUT] /api/admin/inventory/locations/:id - Cập nhật vị trí kho (Chỉ Admin)
 exports.updateLocation = async (req, res, next) => {
   try {
     const { id } = req.params;
+    const { code, name, zone_type = 'general', temperature_range = null, description = null } = req.body || {};
+    const allowedZones = ['cold_storage', 'freezer', 'dry_shelf', 'combo_area', 'general'];
+    if (!String(code || '').trim() || !String(name || '').trim()) {
+      return res.status(400).json({ status: 'error', message: 'Vui lòng nhập mã và tên vị trí kho.' });
+    }
+    if (!allowedZones.includes(zone_type)) {
+      return res.status(400).json({ status: 'error', message: 'Loại khu vực kho không hợp lệ.' });
+    }
     const { data, error } = await supabase
       .from('warehouse_locations')
-      .update({ ...req.body, updated_at: new Date().toISOString() })
+      .update({ code: String(code).trim().toUpperCase(), name: String(name).trim(), zone_type, temperature_range: temperature_range || null, description: description || null, updated_at: new Date().toISOString() })
       .eq('id', id)
       .select()
       .single();
@@ -303,4 +332,21 @@ exports.updateLocation = async (req, res, next) => {
   } catch (err) {
     next(err);
   }
+};
+
+// [DELETE] /api/inventory/locations/:id - Chỉ xóa vị trí chưa gán sản phẩm
+exports.deleteLocation = async (req, res, next) => {
+  try {
+    const { count, error: countError } = await supabase
+      .from('products')
+      .select('id', { count: 'exact', head: true })
+      .eq('location_id', req.params.id);
+    if (countError) throw countError;
+    if (Number(count || 0) > 0) {
+      return res.status(400).json({ status: 'error', message: `Vị trí này đang được gán cho ${count} sản phẩm. Hãy chuyển các sản phẩm sang vị trí khác trước khi xóa.` });
+    }
+    const { error } = await supabase.from('warehouse_locations').delete().eq('id', req.params.id);
+    if (error) throw error;
+    res.json({ status: 'success', message: 'Đã xóa vị trí kho.' });
+  } catch (err) { next(err); }
 };

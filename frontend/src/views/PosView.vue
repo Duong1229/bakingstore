@@ -40,7 +40,7 @@
             v-model="barcodeQuery"
             type="text"
             class="barcode-input"
-            placeholder="Quét mã vạch Barcode hoặc gõ SKU (Enter để thêm ngay)..."
+            placeholder="Gõ tên, SKU hoặc quét mã vạch (Enter để thêm)..."
             @keyup.enter="handleBarcodeSubmit"
           />
           <button class="btn btn-primary btn-sm" @click="handleBarcodeSubmit">Quét / Tìm</button>
@@ -76,6 +76,7 @@
               <span class="item-unit">/ {{ p.unit || 'gói' }}</span>
             </div>
             <small class="stock-available">Còn {{ p.stock_quantity }} {{ p.unit || 'sản phẩm' }}</small>
+            <small v-if="p.warehouse_locations" class="stock-location">📍 {{ p.warehouse_locations.code }} · {{ p.warehouse_locations.name }}</small>
           </div>
         </div>
       </div>
@@ -351,24 +352,32 @@ const removeFromPosCart = (id) => {
 const handleBarcodeSubmit = async () => {
   const code = barcodeQuery.value.trim();
   if (!code) return;
+  const keyword = code.toLocaleLowerCase('vi-VN');
 
-  // 1. Thử tìm trong danh sách đã tải
-  const found = products.value.find(p => p.sku === code || p.barcode === code);
+  // Ưu tiên mã khớp chính xác, sau đó cho phép gõ một phần SKU hoặc tên.
+  const found = products.value.find(p => String(p.sku || '').toLowerCase() === keyword || String(p.barcode || '').toLowerCase() === keyword)
+    || products.value.find(p => `${p.sku || ''} ${p.barcode || ''} ${p.name || ''}`.toLocaleLowerCase('vi-VN').includes(keyword));
   if (found) {
     addToPosCart(found);
     barcodeQuery.value = '';
     return;
   }
 
-  // 2. Thử gọi API barcode backend
+  // Danh sách POS có thể chưa tải hết sản phẩm, nên tìm tiếp trên máy chủ.
   try {
-    const res = await productApi.getByBarcode(code);
-    if (res.product) {
-      addToPosCart(res.product);
+    const result = await productApi.getProducts({ search: code, limit: 10 });
+    const serverProducts = result.products || [];
+    const matched = serverProducts.find(p => String(p.sku || '').toLowerCase() === keyword || String(p.barcode || '').toLowerCase() === keyword)
+      || serverProducts[0];
+    if (matched) {
+      if (!products.value.some(p => p.id === matched.id)) products.value.push(matched);
+      addToPosCart(matched);
       barcodeQuery.value = '';
+      return;
     }
+    throw new Error('not found');
   } catch (err) {
-    alert(`Không tìm thấy sản phẩm với mã: ${code}`);
+    alert(`Không tìm thấy sản phẩm theo tên, SKU hoặc mã vạch: ${code}`);
   }
 };
 
@@ -807,5 +816,5 @@ onUnmounted(() => { if (posQrPoll) clearInterval(posQrPoll); });
   gap: 0.4rem;
   flex-wrap: wrap;
 }
-.pos-customer-box{padding:.75rem 1rem;border-bottom:1px solid var(--border-color);display:grid;gap:.45rem}.pos-customer-box label{font-size:.82rem;font-weight:800}.customer-search,.new-customer{display:flex;gap:.4rem}.customer-search input,.new-customer input{min-width:0;flex:1;border:1px solid var(--border-color);border-radius:7px;padding:.45rem;font:inherit}.customer-search button,.new-customer button{border:0;border-radius:7px;padding:.45rem .55rem;background:#f4e8ed;color:var(--color-primary);font-weight:700;cursor:pointer}.customer-results{display:grid;border:1px solid var(--border-color);border-radius:7px;overflow:hidden}.customer-results button{border:0;border-bottom:1px solid var(--border-color);padding:.45rem;text-align:left;background:#fff;cursor:pointer}.pos-customer-box small{color:var(--color-text-muted)}.pos-qr{display:grid;justify-items:center;gap:.5rem;padding:.85rem;background:#fff8fb;border:1px dashed var(--color-primary);border-radius:9px;text-align:center}.pos-qr img{width:180px;height:180px;object-fit:contain;background:#fff}.pos-qr span{font-size:.8rem;color:var(--color-text-muted)}.stock-available{display:block;margin-top:.55rem;color:#187247;font-weight:700;font-size:.75rem}
+.pos-customer-box{padding:.75rem 1rem;border-bottom:1px solid var(--border-color);display:grid;gap:.45rem}.pos-customer-box label{font-size:.82rem;font-weight:800}.customer-search,.new-customer{display:flex;gap:.4rem}.customer-search input,.new-customer input{min-width:0;flex:1;border:1px solid var(--border-color);border-radius:7px;padding:.45rem;font:inherit}.customer-search button,.new-customer button{border:0;border-radius:7px;padding:.45rem .55rem;background:#f4e8ed;color:var(--color-primary);font-weight:700;cursor:pointer}.customer-results{display:grid;border:1px solid var(--border-color);border-radius:7px;overflow:hidden}.customer-results button{border:0;border-bottom:1px solid var(--border-color);padding:.45rem;text-align:left;background:#fff;cursor:pointer}.pos-customer-box small{color:var(--color-text-muted)}.pos-qr{display:grid;justify-items:center;gap:.5rem;padding:.85rem;background:#fff8fb;border:1px dashed var(--color-primary);border-radius:9px;text-align:center}.pos-qr img{width:180px;height:180px;object-fit:contain;background:#fff}.pos-qr span{font-size:.8rem;color:var(--color-text-muted)}.stock-available{display:block;margin-top:.55rem;color:#187247;font-weight:700;font-size:.75rem}.stock-location{display:block;margin-top:.25rem;color:var(--color-text-muted);font-size:.72rem}
 </style>

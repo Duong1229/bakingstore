@@ -5,7 +5,7 @@ const offlineCatalog = require('../data/offlineCatalog');
 // Chỉ cho phép các trường thật sự có trong bảng products. Dữ liệu tính toán như
 // stock_quantity được API trả về để hiển thị, tuyệt đối không được ghi ngược vào DB.
 const productPayload = (body = {}) => {
-  const allowed = ['name', 'slug', 'sku', 'category_id', 'price', 'unit', 'image_url', 'description', 'is_combo', 'is_active', 'barcode', 'supplier_id'];
+  const allowed = ['name', 'slug', 'sku', 'category_id', 'location_id', 'price', 'unit', 'image_url', 'description', 'is_combo', 'is_active', 'barcode', 'supplier_id'];
   return Object.fromEntries(allowed.filter(key => body[key] !== undefined).map(key => [key, body[key]]));
 };
 
@@ -31,7 +31,7 @@ exports.getProducts = async (req, res, next) => {
     let query = supabase
       .from('products')
       .select(`
-        id, sku, name, slug, description, price, unit, image_url, is_combo,
+        id, sku, name, slug, description, price, unit, image_url, is_combo, location_id,
         rating_average, rating_count, is_active,
         categories(id, name, slug),
         warehouse_locations(id, code, name, zone_type)
@@ -43,7 +43,10 @@ exports.getProducts = async (req, res, next) => {
 
     if (category) query = query.eq('category_id', category);
     if (is_combo !== undefined) query = query.eq('is_combo', is_combo === 'true');
-    if (search) query = query.ilike('name', `%${search}%`);
+    if (search) {
+      const term = String(search).replace(/[,%()]/g, ' ').trim();
+      if (term) query = query.or(`name.ilike.%${term}%,sku.ilike.%${term}%`);
+    }
 
     const { data, error, count } = await query;
     if (error) throw error;
