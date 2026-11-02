@@ -36,38 +36,9 @@ baking-ai-store/
 
 ## 🚀 HƯỚNG DẪN THIẾT LẬP VÀ CHẠY DỰ ÁN
 
-### Bước 1: Mở Workspace trên Antigravity IDE
-1. Nhìn lên menu góc trên bên trái của Antigravity, chọn **File** $\rightarrow$ **Open Folder...** (hoặc bấm phím tắt `Ctrl + K, Ctrl + O`).
-2. Chọn thư mục dự án: `C:\Users\ThinkPad\.gemini\antigravity\scratch\baking-ai-store`.
-
 ---
 
-### Bước 2: Thiết lập Cơ sở dữ liệu Supabase (Miễn phí)
-1. Đăng nhập vào [Supabase](https://supabase.com/) và tạo một Project mới (chọn Region Singapore để tốc độ nhanh nhất).
-2. Vào mục **SQL Editor** ở thanh menu bên trái của Supabase:
-   * Mở file `database/schema.sql`, sao chép toàn bộ nội dung dán vào SQL Editor rồi bấm **Run**. *(Hệ thống sẽ tạo toàn bộ bảng, quan hệ khóa ngoại, trigger tính sao đánh giá và thuật toán xuất kho FEFO).*
-   * Tiếp tục mở file `database/seed.sql`, sao chép dán vào và bấm **Run** để nạp dữ liệu mẫu ban đầu.
-3. Vào mục **Project Settings** $\rightarrow$ **API**:
-   * Sao chép **Project URL**.
-   * Sao chép **service_role key** (Secret key có quyền ghi/đọc dữ liệu).
-
----
-
-### Bước 3: Cấu hình biến môi trường Backend
-1. Tại thư mục `backend/`, đổi tên hoặc sao chép file `.env.example` thành `.env`:
-   ```bash
-   cp backend/.env.example backend/.env
-   ```
-2. Điền các thông tin vào file `backend/.env`:
-   * `SUPABASE_URL`: Dán Project URL từ Supabase.
-   * `SUPABASE_SERVICE_ROLE_KEY`: Dán Service Role Key từ Supabase.
-   * `GEMINI_API_KEY`: Lấy API Key miễn phí tại [Google AI Studio](https://aistudio.google.com/).
-   * `BANK_CODE`, `BANK_ACCOUNT_NO`, `BANK_ACCOUNT_NAME`: Số tài khoản ngân hàng cá nhân của bạn để nhận tiền VietQR.
-   * `SEPAY_API_KEY`: API Token từ SePay để kiểm tra Webhook.
-
----
-
-### Bước 4: Cài đặt thư viện và Chạy Backend
+### Cài đặt thư viện và Chạy Backend
 Mở Terminal trong thư mục `backend/` và chạy:
 ```bash
 npm install
