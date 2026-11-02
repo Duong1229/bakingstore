@@ -48,7 +48,8 @@
         <div class="vietqr-amount">{{ formatVND(order.final_amount) }}</div>
         <div class="vietqr-code">Nội dung chuyển khoản: <b>{{ order.order_code }}</b></div>
         <div class="payment-countdown"><span>Đơn sẽ tự hủy sau</span><strong>{{ countdownText }}</strong><small v-if="remainingSeconds > 0">Thanh toán trước thời điểm này để Tiệm Ốc giữ hàng cho bạn.</small></div>
-        <div class="polling-hint"><div class="pulse-dot"></div><span>Đang chờ xác nhận thanh toán tự động…</span></div>
+        <div class="polling-hint"><div class="pulse-dot"></div><span>Đang đối soát giao dịch tự động qua SePay…</span></div>
+        <small class="sepay-local-note">Không cần bấm xác nhận: Tiệm Ốc sẽ tự cập nhật đơn ngay khi SePay ghi nhận đúng số tiền và nội dung chuyển khoản.</small>
       </section>
 
         <div class="order-summary card">
@@ -108,7 +109,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted, computed } from 'vue';
 import { useRoute } from 'vue-router';
-import { orderApi, reviewApi } from '../api';
+import { orderApi, paymentApi, reviewApi } from '../api';
 import { useAuthStore } from '../stores/auth';
 import confetti from 'canvas-confetti';
 
@@ -174,6 +175,19 @@ const fetchOrder = async (isPolling = false) => {
     console.error('Fetch order detail error:', err);
   } finally {
     if (!isPolling) isLoading.value = false;
+  }
+};
+
+// Kiểm tra ngay khi khách đang mở trang đơn để rút ngắn thời gian chờ.
+// Backend vẫn tự đối soát định kỳ nên khách đóng trang cũng không làm mất việc xác nhận.
+const checkSepayPayment = async () => {
+  if (!order.value || order.value.payment_method !== 'vietqr' || order.value.order_status !== 'pending' || order.value.payment_status === 'paid') return;
+  try {
+    await paymentApi.checkSepayPayment(order.value.id);
+    await fetchOrder(true);
+  } catch (error) {
+    // Không hiện cảnh báo lặp lại cho khách khi giao dịch chưa xuất hiện hoặc API đang cấu hình.
+    console.warn('SePay payment check:', error.message);
   }
 };
 
@@ -267,16 +281,16 @@ const getStatusClass = (status) => {
 };
 
 onMounted(() => {
-  fetchOrder();
+  fetchOrder().then(checkSepayPayment);
   countdownInterval = setInterval(updateCountdown, 1000);
   // Chỉ tự kiểm tra các đơn VietQR đang chờ tiền. Đơn COD đã giao có thể
   // vẫn mang trạng thái "unpaid", nhưng tuyệt đối không được làm mới liên
   // tục vì khách đang viết đánh giá.
   pollInterval = setInterval(() => {
     if (order.value && order.value.payment_method === 'vietqr' && order.value.order_status === 'pending' && order.value.payment_status !== 'paid') {
-      fetchOrder(true);
+      checkSepayPayment();
     }
-  }, 3000);
+  }, 15000);
 });
 
 onUnmounted(() => {
@@ -409,6 +423,15 @@ onUnmounted(() => {
   font-size: 0.78rem;
   color: var(--color-text-muted);
   margin-top: 1.25rem;
+}
+
+.sepay-local-note {
+  display: block;
+  max-width: 32rem;
+  margin: 0.45rem auto 0;
+  text-align: center;
+  line-height: 1.45;
+  color: var(--color-text-muted);
 }
 
 .pulse-dot {

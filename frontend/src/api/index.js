@@ -98,6 +98,7 @@ export const inventoryApi = {
 // 5. Payment APIs
 export const paymentApi = {
   getVietQR: (orderId) => api.get(`/payments/vietqr/${orderId}`),
+  checkSepayPayment: (orderId) => api.post(`/payments/sepay/check/${orderId}`),
 };
 
 export const reviewApi = {

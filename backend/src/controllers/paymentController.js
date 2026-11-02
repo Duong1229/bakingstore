@@ -1,5 +1,6 @@
 const supabase = require('../config/supabase');
 const vietqrService = require('../services/vietqrService');
+const sepayPollingService = require('../services/sepayPollingService');
 
 // [POST] /api/payments/sepay-webhook - Nhận Webhook từ SePay khi có tiền chuyển vào
 exports.sePayWebhook = async (req, res, next) => {
@@ -119,6 +120,24 @@ exports.getVietQR = async (req, res, next) => {
   } catch (err) {
     next(err);
   }
+};
+
+// [POST] /api/payments/sepay/check/:order_id
+// Dành cho local: server chủ động hỏi SePay, không cần webhook/public URL.
+exports.checkSepayPayment = async (req, res, next) => {
+  try {
+    const { data: order, error } = await supabase.from('orders')
+      .select('id, customer_id, order_code, final_amount, payment_method, payment_status, order_status, created_at')
+      .eq('id', req.params.order_id).single();
+    if (error || !order) return res.status(404).json({ status: 'error', message: 'Không tìm thấy đơn hàng.' });
+    if (req.user.role === 'customer' && order.customer_id !== req.user.id) return res.status(403).json({ status: 'error', message: 'Bạn không có quyền kiểm tra đơn hàng này.' });
+    if (order.payment_method !== 'vietqr') return res.status(400).json({ status: 'error', message: 'Đơn này không thanh toán qua VietQR/SePay.' });
+    if (order.payment_status === 'paid') return res.json({ status: 'success', paid: true, message: 'Đơn hàng đã thanh toán.' });
+
+    const result = await sepayPollingService.checkOrderPayment(order);
+    if (!result.configured) return res.status(503).json({ status: 'error', message: 'Chưa cấu hình SePay API cho kiểm tra thanh toán tự động.' });
+    res.json({ status: 'success', paid: Boolean(result.paid || result.already_paid), message: result.matched ? 'Đã tìm thấy giao dịch khớp và xác nhận thanh toán.' : 'Chưa thấy giao dịch khớp. SePay sẽ tự kiểm tra lại sau ít phút.' });
+  } catch (err) { next(err); }
 };
 
 // [GET] /api/admin/payments - Danh sách giao dịch thanh toán (Admin)

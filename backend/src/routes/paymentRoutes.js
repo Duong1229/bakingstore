@@ -8,6 +8,7 @@ router.post('/sepay-webhook', paymentController.sePayWebhook);
 
 // VietQR cho đơn hàng cụ thể
 router.get('/vietqr/:order_id', authenticate, paymentController.getVietQR);
+router.post('/sepay/check/:order_id', authenticate, paymentController.checkSepayPayment);
 
 // Admin xem lịch sử thanh toán
 router.get('/', authenticate, authorize('admin'), paymentController.getPayments);

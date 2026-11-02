@@ -8,8 +8,10 @@
     "story_title": "Gửi một chiếc bánh, gửi trọn yêu thương",
     "story_content": "20/10 là dịp để gửi lời cảm ơn thật ngọt ngào đến những người phụ nữ bạn yêu quý. Từ một chiếc bánh kem hoa nhỏ xinh đến hộp cupcake tự làm, bạn có thể chuẩn bị món quà mang dấu ấn riêng bằng những nguyên liệu tươi ngon của Tiệm Ốc.",
     "category_id": "10000000-0000-0000-0000-000000000007",
-    "sort_order": 1,
-    "is_active": true
+    "sort_order": 3,
+    "is_active": true,
+    "collection_key": "",
+    "updated_at": "2026-11-02T02:13:07.041Z"
   },
   {
     "id": "banner-ingredients",
@@ -34,7 +36,9 @@
     "story_title": "Mẻ cookie thơm bơ cho những buổi chiều ấm áp",
     "story_content": "Chọn bột, bơ và chocolate phù hợp để làm ra những chiếc cookie giòn thơm tại nhà.",
     "category_id": "10000000-0000-0000-0000-000000000006",
-    "sort_order": 3,
-    "is_active": true
+    "sort_order": 1,
+    "is_active": true,
+    "collection_key": "",
+    "updated_at": "2026-11-02T02:13:01.851Z"
   }
 ]
